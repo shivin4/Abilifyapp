@@ -6,3 +6,4 @@
 - **2026-03-13** - feat: integrate Firebase core options
 - **2026-03-14** - feat: add splash and role gate routing
 - **2026-03-15** - feat: implement phone login screen
+- **2026-03-15** - feat: add OTP verification flow
