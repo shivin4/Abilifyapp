@@ -9,3 +9,4 @@
 - **2026-03-15** - feat: add OTP verification flow
 - **2026-03-15** - feat: add profile and session data models
 - **2026-03-16** - feat: build parent dashboard layout
+- **2026-03-16** - feat: add therapist directory and filters
