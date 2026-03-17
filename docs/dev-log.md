@@ -12,3 +12,4 @@
 - **2026-03-16** - feat: add therapist directory and filters
 - **2026-03-17** - feat: parent profile editing
 - **2026-03-17** - feat: therapist dashboard and schedule views
+- **2026-03-17** - feat: appointment details and session notes
