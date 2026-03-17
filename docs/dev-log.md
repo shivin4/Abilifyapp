@@ -13,3 +13,4 @@
 - **2026-03-17** - feat: parent profile editing
 - **2026-03-17** - feat: therapist dashboard and schedule views
 - **2026-03-17** - feat: appointment details and session notes
+- **2026-03-17** - feat: add realtime chat screen
