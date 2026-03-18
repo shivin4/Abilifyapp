@@ -14,3 +14,4 @@
 - **2026-03-17** - feat: therapist dashboard and schedule views
 - **2026-03-17** - feat: appointment details and session notes
 - **2026-03-17** - feat: add realtime chat screen
+- **2026-03-18** - chore: add Agora web quickstart for token testing
