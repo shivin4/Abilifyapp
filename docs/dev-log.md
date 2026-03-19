@@ -16,3 +16,4 @@
 - **2026-03-17** - feat: add realtime chat screen
 - **2026-03-18** - chore: add Agora web quickstart for token testing
 - **2026-03-19** - feat: add Agora RTC and permission_handler deps
+- **2026-03-19** - feat: add Node token server for Agora
