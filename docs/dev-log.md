@@ -19,3 +19,4 @@
 - **2026-03-19** - feat: add Node token server for Agora
 - **2026-03-20** - feat: video session page with channel join
 - **2026-03-20** - fix: listen on 0.0.0.0 for LAN device testing
+- **2026-03-20** - feat: add env examples for Agora and API base URL
