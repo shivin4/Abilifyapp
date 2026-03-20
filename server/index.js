@@ -25,7 +25,7 @@ app.get('/agora-token', (req, res) => {
   res.header('Access-Control-Allow-Origin', '*');
   
   const channelName = req.query.channelName;
-  console.log(`Token requested for channel: \${channelName}`);
+  console.log(`Token requested for channel: ${channelName}`);
 
   if (!channelName) {
     return res.status(500).json({ 'error': 'channelName is required' });
@@ -86,6 +86,7 @@ app.post('/notify', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Abilify backend server listening on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Abilify backend server listening on http://0.0.0.0:${PORT}`);
+  console.log('LAN: use your PC IPv4 in API_BASE_URL for physical phones');
 });
