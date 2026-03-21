@@ -21,3 +21,4 @@
 - **2026-03-20** - fix: listen on 0.0.0.0 for LAN device testing
 - **2026-03-20** - feat: add env examples for Agora and API base URL
 - **2026-03-21** - fix: use local UID from Agora join callback
+- **2026-03-21** - docs: document two-phone video demo in README

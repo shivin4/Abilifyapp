@@ -1,75 +1,174 @@
-# Abilify – Phase 1 (Flutter + Supabase)
+# Abilify – Flutter App (Phase 1 Beta)
 
-This repo contains the Phase 1 app described in the spec: OTP onboarding, automatic role-routing (parent/therapist), a parent Service Directory UI (Therapists functional; others show "Coming Soon"), and therapist-side dashboards/screens (schedule, appointment details, post-session notes).
+A platform connecting parents of children with special needs to verified therapists. Built with **Flutter**, **Firebase**, and **Agora** video.
 
-## 1) Run locally
+---
 
-- Install Flutter and run `flutter doctor`.
-- Install dependencies:
-  ```bash
-  flutter pub get
-  ```
-- Create a `.env` file at project root (already created) and set:
-  ```
-  SUPABASE_URL=<your_url>
-  SUPABASE_ANON_KEY=<your_anon_key>
-  ```
-  Without these, the app runs in offline/mock mode and directly opens the Parent dashboard.
-- Launch:
-  ```bash
-  flutter run
-  ```
+## Tech Stack
 
-### Pre-create users with phone + password (no SMS required)
-Use the provided PowerShell script (requires Service Role key—do NOT put it in the app):
+| Layer | Technology |
+|---|---|
+| Framework | Flutter (Dart) |
+| Auth | Firebase Authentication (Phone OTP) |
+| Database | Cloud Firestore |
+| Video Calls | Agora RTC Engine |
+| Chat | Cloud Firestore (real-time) |
+| State Management | Riverpod |
+| Routing | GoRouter |
+| Config | `flutter_dotenv` (`.env` file) |
+| Token server | Node.js + Express (`server/`) |
 
-```powershell
-# One-time per session
-$env:SUPABASE_URL = 'https://<project-ref>.supabase.co'
-$env:SUPABASE_SERVICE_ROLE = '{{SUPABASE_SERVICE_ROLE}}'
+---
 
-# Edit scripts/testers.csv with your testers
-# Then run:
-pwsh scripts/bulk_create_users.ps1 -CsvPath scripts/testers.csv -SupabaseUrl $env:SUPABASE_URL -ServiceRole $env:SUPABASE_SERVICE_ROLE -CreateTherapists
+## Quick Start (Submission Demo)
+
+### 1. Environment files
+
+**Project root `.env`** (Flutter):
+
+```env
+AGORA_APP_ID=your_agora_app_id
+API_BASE_URL=http://YOUR_PC_LAN_IP:3000
 ```
-- CSV columns: `phone,password,full_name,role,city,languages,experience_years,rating,price_per_session`
-- For each row, the script:
-  - Creates the auth user with `phone_confirm=true`;
-  - Upserts a `profiles` row with the specified `role`;
-  - If role is `therapist` (or `-CreateTherapists` globally), upserts a `therapists` row so they appear in the directory.
 
-After that, your testers can login in-app using Phone + Password. RoleGate will route them to Therapist or Parent dashboards accordingly.
+- On a **physical phone**, set `API_BASE_URL` to your PC’s LAN IP (e.g. `http://10.7.12.112:3000`).
+- On **Android emulator**, omit `API_BASE_URL` or use `http://10.0.2.2:3000`.
 
-## 2) Supabase schema
-Apply `supabase/schema.sql` in your Supabase project (SQL Editor ➜ Run). It creates:
-- `profiles` with `role` ('therapist'|'parent')
-- `therapists` directory table (languages, availability, rating, etc.)
-- `sessions`, `session_notes`, `activities`, `transactions`, `reviews`, `packages`
+**`server/.env`** (token server):
 
-Recommended: create beta users via Auth ➜ Users. After first login, insert a row in `profiles` for each user with the desired `role`.
+```env
+AGORA_APP_ID=your_agora_app_id
+AGORA_APP_CERTIFICATE=your_agora_certificate
+```
 
-## 3) Key flows implemented
-- Splash ➜ Login (phone OTP) ➜ Role gate ➜ Therapist or Parent dashboards.
-- Parent Service Directory UI matches the provided design; Filters bottom sheet excludes Expertise (Availability + Languages only). Therapist icon is highlighted when active; other categories show "Coming Soon".
-- Therapist Dashboard: quick stats; Upcoming Sessions list; Schedule Calendar with legend and Edit Availability; Appointment Details; Post-Session Notes.
+### 2. Start token server
 
-## 4) What’s stubbed in Phase 1
-- Video/Chat session is a placeholder (UI only). Integrate a provider (Jitsi, Daily, or custom WebRTC) in Phase 2.
-- Payments, Packages, Reviews Analytics, and deeper Client/Progress flows are scaffolded for later.
+```bash
+cd server
+npm install
+node index.js
+```
 
-## 5) Code structure
+Verify: open `http://127.0.0.1:3000/agora-token?channelName=test_channel` — you should get JSON with a `token`.
+
+### 3. Run Flutter app
+
+```bash
+flutter pub get
+flutter run
+```
+
+### 4. Firebase setup
+
+Project: **`abilifyapp`** (see `lib/firebase_options.dart`).
+
+**Firestore collections:**
+
+| Collection | Purpose |
+|---|---|
+| `profiles/{uid}` | `role`, `fullName`, `phone`, `childName` |
+| `therapists/{uid}` | Therapist public profile (optional; demo list used if empty) |
+| `sessions/{id}` | Bookings + `channelId` for video |
+| `chats/{chatId}/messages` | Real-time chat |
+
+**Test users:**
+
+1. Firebase Console → Authentication → add phone users.
+2. Firestore → `profiles/{uid}`:
+   - Parent: `{ "role": "parent", "fullName": "..." }`
+   - Therapist (approved): `{ "role": "therapist", "fullName": "..." }`
+   - Therapist (pending): `{ "role": "therapist_pending" }`
+
+---
+
+## App Flow
+
+```
+Launch → Splash
+  ├── Not logged in → Login / Sign up → OTP → Role select (signup)
+  └── Logged in → Role Gate
+        ├── therapist → Therapist Dashboard
+        ├── therapist_pending → Pending approval screen
+        └── parent → Parent Dashboard
+```
+
+---
+
+## Two-Phone Video Call Demo
+
+1. Start **token server** on PC (`node index.js`).
+2. Set **`API_BASE_URL`** in `.env` to your PC LAN IP; rebuild app on both phones.
+3. **Phone A (Parent):**
+   - Log in as parent → book a therapist → note the **Channel ID** in the snackbar.
+   - Open **My Sessions** → tap session → joins video.
+4. **Phone B (Therapist):**
+   - Log in as therapist → **Join session by channel ID** → paste the same Channel ID from Phone A.
+5. Both should see local preview (corner) and remote video (center).
+
+> **Why not Chrome?** Flutter web does not fully support `agora_rtc_engine` video. Use two physical devices or an Android emulator + phone.
+
+---
+
+## Features Implemented
+
+### Auth
+- Phone login & sign-up with OTP
+- Role selection (parent / therapist pending)
+- Pending approval screen for therapists
+- Role-based routing via Firestore `profiles`
+
+### Parent
+- Therapist directory (Firestore + demo fallback)
+- Search & filters (location, languages, availability)
+- **Book session** → creates Firestore `sessions` doc
+- **My Sessions** with one-tap video join
+- Profile (name, child name) saved to Firestore
+- Chat with therapist
+
+### Therapist
+- Dashboard with live sessions from Firestore
+- Appointment details → start video / mark completed
+- Schedule calendar & availability UI
+- Post-session notes
+- **Join by channel ID** for demo pairing
+- Video calls (Agora RTC)
+
+### Chat
+- Real-time Firestore messages
+- Wired from therapist cards
+
+---
+
+## Project Structure
+
 ```
 lib/
-  core/            # theme, router, bootstrap (Supabase + dotenv)
+  core/           app, router, theme, bootstrap, config
+  services/       app_repository.dart (Firestore + booking)
+  models/         profile, session, therapist
   features/
-    auth/          # splash, phone login, otp
-    parent/        # dashboard + service directory + filter sheet
-    therapist/     # dashboard, schedule, appointment details, notes
-  models/          # simple data models
-supabase/
-  schema.sql       # Phase 1 database objects
+    auth/         splash, login, signup, otp, role select, pending
+    parent/       dashboard, profile, book session, widgets
+    therapist/    dashboard, schedule, appointment, notes, video
+    chat/         chat_page
+server/           Agora token API (port 3000)
 ```
 
-## 6) Notes
-- Sessions persist automatically with Supabase when keys are set; otherwise the app runs without network.
-- Lints are enabled but permissive; feel free to tighten rules.
+---
+
+## Submission Checklist
+
+- [ ] `server/.env` with Agora credentials
+- [ ] Root `.env` with `AGORA_APP_ID` and `API_BASE_URL` (LAN IP for devices)
+- [ ] Token server running during demo
+- [ ] Two Firebase test users (parent + therapist)
+- [ ] Therapist profile `role: "therapist"` (not pending) for full therapist UI
+- [ ] Demo: book session → join video on both phones with same channel ID
+
+---
+
+## Known Limitations (Phase 1)
+
+- Payments, push notifications, admin verification UI, and community hub are out of scope.
+- Demo therapists use static IDs unless you add documents under `therapists/` in Firestore.
+- Therapist only sees booked sessions when `sessions.therapistId` matches their Firebase UID (use **Join by channel ID** for quick demos with demo therapist cards).
