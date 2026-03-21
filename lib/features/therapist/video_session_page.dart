@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart';
+import '../../core/config.dart';
 
 class VideoSessionPage extends StatefulWidget {
   final String channelName;
@@ -16,8 +16,10 @@ class VideoSessionPage extends StatefulWidget {
 
 class _VideoSessionPageState extends State<VideoSessionPage> {
   int? _remoteUid;
+  int? _localUid;
   bool _localUserJoined = false;
-  late RtcEngine _engine;
+  String? _error;
+  RtcEngine? _engine;
 
   @override
   void initState() {
@@ -26,71 +28,76 @@ class _VideoSessionPageState extends State<VideoSessionPage> {
   }
 
   Future<void> initAgora() async {
-    // retrieve permissions
     await [Permission.microphone, Permission.camera].request();
 
-    // create the engine
-    _engine = createAgoraRtcEngine();
-    await _engine.initialize(RtcEngineContext(
-      appId: dotenv.env['AGORA_APP_ID']!,
+    final appId = dotenv.env['AGORA_APP_ID'];
+    if (appId == null || appId.isEmpty) {
+      setState(() => _error = 'AGORA_APP_ID missing in .env');
+      return;
+    }
+
+    final engine = createAgoraRtcEngine();
+    _engine = engine;
+    await engine.initialize(RtcEngineContext(
+      appId: appId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
 
-    _engine.registerEventHandler(
+    engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          debugPrint("local user \${connection.localUid} joined");
+          debugPrint('local user ${connection.localUid} joined');
           setState(() {
             _localUserJoined = true;
+            _localUid = connection.localUid;
           });
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          debugPrint("remote user \$remoteUid joined");
-          setState(() {
-            _remoteUid = remoteUid;
-          });
+          debugPrint('remote user $remoteUid joined');
+          setState(() => _remoteUid = remoteUid);
         },
         onUserOffline: (RtcConnection connection, int remoteUid,
             UserOfflineReasonType reason) {
-          debugPrint("remote user \$remoteUid left channel");
-          setState(() {
-            _remoteUid = null;
-          });
+          debugPrint('remote user $remoteUid left channel');
+          setState(() => _remoteUid = null);
+        },
+        onError: (ErrorCodeType err, String msg) {
+          debugPrint('Agora error: $err $msg');
         },
       ),
     );
 
-    await _engine.enableVideo();
-    await _engine.startPreview();
+    await engine.enableVideo();
+    await engine.startPreview();
 
-    // In production, point this to your Utho Server's domain name, e.g., 'https://api.abilify.com'
-    // For local dev, we fetch from our local Node instance:
-    // On a physical mobile device, use your PC's LAN IP so the phone can reach the backend.
-    String baseUrl = 'http://127.0.0.1:3000';
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
-      baseUrl = 'http://10.7.12.112:3000';
-    }
-    
+    final baseUrl = await resolveApiBaseUrl();
     String token = '';
     try {
       debugPrint('Requesting Agora token from $baseUrl for channel ${widget.channelName}');
-      final uri = Uri.parse('$baseUrl/agora-token?channelName=${widget.channelName}');
-      debugPrint('Request URI: $uri');
-      final res = await http.get(uri);
-      debugPrint('Token response status: ${res.statusCode}, body: ${res.body}');
+      final uri = Uri.parse('$baseUrl/agora-token?channelName=${Uri.encodeComponent(widget.channelName)}');
+      final res = await http.get(uri).timeout(const Duration(seconds: 30));
+      debugPrint('Token response status: ${res.statusCode}');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        token = data['token'];
+        token = data['token'] as String? ?? '';
       } else {
-        debugPrint('Failed to get token: ${res.body}');
+        setState(() => _error = 'Token server error: ${res.body}');
+        return;
       }
     } catch (e) {
-      debugPrint('Error fetching token -> Ensure the NodeJS server is running: $e');
+      setState(() => _error = _tokenServerErrorMessage(baseUrl, e));
+      return;
     }
 
-    await _engine.joinChannel(
+    if (token.isEmpty) {
+      setState(() => _error = 'Empty token from server');
+      return;
+    }
+
+    await engine.joinChannel(
       token: token,
       channelId: widget.channelName,
+      uid: 0,
       options: const ChannelMediaOptions(
         autoSubscribeVideo: true,
         autoSubscribeAudio: true,
@@ -98,72 +105,145 @@ class _VideoSessionPageState extends State<VideoSessionPage> {
         publishMicrophoneTrack: true,
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
       ),
-      uid: 0,
     );
+  }
+
+  String _tokenServerErrorMessage(String baseUrl, Object e) {
+    return 'Cannot reach token server at $baseUrl\n\n'
+        '$e\n\n'
+        'Checklist:\n'
+        '• PC: node index.js running in server/\n'
+        '• Phone on same Wi‑Fi as PC (not mobile data)\n'
+        '• .env API_BASE_URL = PC IP from ipconfig\n'
+        '• Phone browser opens: $baseUrl/agora-token?channelName=test\n'
+        '• Windows Firewall allows Node on port 3000';
+  }
+
+  Future<void> _retry() async {
+    setState(() {
+      _error = null;
+      _localUserJoined = false;
+      _localUid = null;
+      _remoteUid = null;
+    });
+    await _dispose();
+    await initAgora();
+  }
+
+  Future<void> _endCall() async {
+    await _dispose();
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
   void dispose() {
-    super.dispose();
     _dispose();
+    super.dispose();
   }
 
   Future<void> _dispose() async {
-    await _engine.leaveChannel();
-    await _engine.release();
+    final engine = _engine;
+    if (engine == null) return;
+    try {
+      await engine.leaveChannel();
+      await engine.release();
+    } catch (_) {}
+    _engine = null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Therapy Session'),
-      ),
-      body: Stack(
-        children: [
-          Center(
-            child: _remoteVideo(),
-          ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 100,
-              height: 150,
-              child: Center(
-                child: _localUserJoined
-                    ? AgoraVideoView(
-                        controller: VideoViewController(
-                          rtcEngine: _engine,
-                          canvas: const VideoCanvas(
-                            uid: 0,
-                            renderMode: RenderModeType.renderModeHidden,
-                          ),
-                        ),
-                      )
-                    : const CircularProgressIndicator(),
-              ),
-            ),
+        title: Text('Session • ${widget.channelName}'),
+        backgroundColor: Colors.black87,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.call_end, color: Colors.red),
+            onPressed: _endCall,
           ),
         ],
       ),
+      body: _error != null
+          ? Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+                    const SizedBox(height: 24),
+                    ElevatedButton(onPressed: _retry, child: const Text('Retry')),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                      child: const Text('Go back'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Stack(
+              children: [
+                Center(child: _remoteVideo()),
+                if (_localUserJoined && _localUid != null)
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 120,
+                          height: 160,
+                          child: AgoraVideoView(
+                            controller: VideoViewController(
+                              rtcEngine: _engine!,
+                              canvas: VideoCanvas(
+                                uid: _localUid,
+                                renderMode: RenderModeType.renderModeHidden,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 
-  // Generate remote viewport
   Widget _remoteVideo() {
     if (_remoteUid != null) {
       return AgoraVideoView(
         controller: VideoViewController.remote(
-          rtcEngine: _engine,
+          rtcEngine: _engine!,
           canvas: VideoCanvas(uid: _remoteUid),
           connection: RtcConnection(channelId: widget.channelName),
         ),
       );
-    } else {
-      return const Text(
-        'Waiting for other participant to join',
-        textAlign: TextAlign.center,
-      );
     }
+    return const Padding(
+      padding: EdgeInsets.all(24),
+      child: Text(
+        'Waiting for other participant…\n\nBoth users must join the same channel.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.white70, fontSize: 16),
+      ),
+    );
   }
 }

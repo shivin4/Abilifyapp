@@ -20,3 +20,4 @@
 - **2026-03-20** - feat: video session page with channel join
 - **2026-03-20** - fix: listen on 0.0.0.0 for LAN device testing
 - **2026-03-20** - feat: add env examples for Agora and API base URL
+- **2026-03-21** - fix: use local UID from Agora join callback
