@@ -22,3 +22,4 @@
 - **2026-03-20** - feat: add env examples for Agora and API base URL
 - **2026-03-21** - fix: use local UID from Agora join callback
 - **2026-03-21** - docs: document two-phone video demo in README
+- **2026-03-22** - feat: resolve API base URL for emulator vs device
