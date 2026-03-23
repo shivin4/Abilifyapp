@@ -23,3 +23,4 @@
 - **2026-03-21** - fix: use local UID from Agora join callback
 - **2026-03-21** - docs: document two-phone video demo in README
 - **2026-03-22** - feat: resolve API base URL for emulator vs device
+- **2026-03-23** - refactor: introduce app repository service layer
