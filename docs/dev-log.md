@@ -25,3 +25,4 @@
 - **2026-03-22** - feat: resolve API base URL for emulator vs device
 - **2026-03-23** - refactor: introduce app repository service layer
 - **2026-03-23** - feat: signup and role selection screens
+- **2026-03-23** - feat: session booking page for parents
