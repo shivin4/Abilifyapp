@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/bootstrap.dart';
+import '../services/app_repository.dart';
 
 class RoleGatePage extends StatefulWidget {
   const RoleGatePage({super.key});
@@ -20,7 +21,7 @@ class _RoleGatePageState extends State<RoleGatePage> {
 
   Future<void> _check() async {
     if (!AppBootstrap.firebaseEnabled) {
-      if (mounted) context.go('/p/dashboard');
+      if (mounted) context.go('/p/home');
       return;
     }
     final user = FirebaseAuth.instance.currentUser;
@@ -29,7 +30,6 @@ class _RoleGatePageState extends State<RoleGatePage> {
       return;
     }
 
-    // 1) Try to read role from profiles
     String? role;
     try {
       final doc = await FirebaseFirestore.instance.collection('profiles').doc(user.uid).get();
@@ -38,7 +38,6 @@ class _RoleGatePageState extends State<RoleGatePage> {
       }
     } catch (_) {}
 
-    // 2) Fallback: if role not found, infer from therapists collection
     if (role == null) {
       try {
         final doc = await FirebaseFirestore.instance.collection('therapists').doc(user.uid).get();
@@ -46,14 +45,24 @@ class _RoleGatePageState extends State<RoleGatePage> {
       } catch (_) {}
     }
 
-    // Default to parent if still unknown
-    role ??= 'parent';
-
     if (!mounted) return;
-    if (role == 'therapist') {
-      context.go('/t/dashboard');
-    } else {
-      context.go('/p/dashboard');
+
+    switch (role) {
+      case 'therapist':
+        final listing = await AppRepository.instance.getTherapist(user.uid);
+        if (listing == null || !listing.isAvailable) {
+          context.go('/t/profile-setup');
+        } else {
+          context.go('/t/home');
+        }
+      case 'therapist_pending':
+        context.go('/pending');
+      case 'parent':
+        context.go('/p/home');
+      case null:
+        context.go('/login');
+      default:
+        context.go('/p/home');
     }
   }
 
