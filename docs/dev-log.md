@@ -30,3 +30,4 @@
 - **2026-03-24** - feat: therapist listing setup flow
 - **2026-03-25** - feat: parent community feed
 - **2026-03-25** - chore: add Firestore security rules
+- **2026-03-25** - feat: shared UI widgets and theme polish
