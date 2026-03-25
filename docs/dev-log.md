@@ -28,3 +28,4 @@
 - **2026-03-23** - feat: session booking page for parents
 - **2026-03-24** - feat: parent shell with bottom navigation
 - **2026-03-24** - feat: therapist listing setup flow
+- **2026-03-25** - feat: parent community feed
