@@ -32,3 +32,4 @@
 - **2026-03-25** - chore: add Firestore security rules
 - **2026-03-25** - feat: shared UI widgets and theme polish
 - **2026-03-25** - refactor: router paths for parent and therapist shells
+- **2026-03-26** - refactor: therapist dashboard uses live Firestore sessions
