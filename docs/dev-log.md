@@ -37,3 +37,4 @@
 - **2026-03-27** - fix: video session error handling and retry UI
 - **2026-03-28** - ui: redesign login and OTP screens
 - **2026-03-28** - ui: animated splash with brand illustration
+- **2026-03-28** - fix: use PNG splash asset for reliable rendering
