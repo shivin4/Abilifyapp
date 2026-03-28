@@ -2,11 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/bootstrap.dart';
+import '../../core/widgets/app_widgets.dart';
 
 class OTPPage extends StatefulWidget {
   final String phone;
   final String verificationId;
-  const OTPPage({super.key, required this.phone, required this.verificationId});
+  final bool isSignup;
+  final String name;
+
+  const OTPPage({
+    super.key,
+    required this.phone,
+    required this.verificationId,
+    this.isSignup = false,
+    this.name = '',
+  });
 
   @override
   State<OTPPage> createState() => _OTPPageState();
@@ -19,7 +29,7 @@ class _OTPPageState extends State<OTPPage> {
 
   Future<void> _verify() async {
     if (!AppBootstrap.firebaseEnabled) {
-      if (mounted) context.go('/p/dashboard');
+      if (mounted) context.go('/p/home');
       return;
     }
     setState(() {
@@ -32,7 +42,15 @@ class _OTPPageState extends State<OTPPage> {
         smsCode: _otpCtrl.text.trim(),
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      if (mounted) context.go('/home');
+      if (!mounted) return;
+      if (widget.isSignup) {
+        context.go('/role-select', extra: {
+          'name': widget.name,
+          'phone': widget.phone,
+        });
+      } else {
+        context.go('/home');
+      }
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -43,34 +61,37 @@ class _OTPPageState extends State<OTPPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify OTP')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Code sent to ${widget.phone}'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _otpCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Enter OTP'),
-            ),
-            const Spacer(),
-            if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _verify,
-                child: _loading
-                    ? const CircularProgressIndicator.adaptive()
-                    : const Text('Verify'),
+      body: Column(
+        children: [
+          AppGradientHeader(
+            title: 'Verify OTP',
+            subtitle: 'Enter the code sent to ${widget.phone}',
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _otpCtrl,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 8),
+                    decoration: const InputDecoration(hintText: '• • • • • •'),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                  ],
+                  const Spacer(),
+                  AppPrimaryButton(label: 'Verify & continue', loading: _loading, onPressed: _verify),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
-

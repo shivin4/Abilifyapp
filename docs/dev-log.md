@@ -35,3 +35,4 @@
 - **2026-03-26** - refactor: therapist dashboard uses live Firestore sessions
 - **2026-03-27** - refactor: parent home and directory from repository
 - **2026-03-27** - fix: video session error handling and retry UI
+- **2026-03-28** - ui: redesign login and OTP screens
