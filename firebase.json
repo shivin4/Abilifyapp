@@ -1,1 +1,29 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"abilifyapp","appId":"1:63082519291:android:4abf0e19dbbb3e4cfe2e5e","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"abilifyapp","configurations":{"android":"1:63082519291:android:4abf0e19dbbb3e4cfe2e5e","ios":"1:63082519291:ios:b8135bba6baf9293fe2e5e","macos":"1:63082519291:ios:b8135bba6baf9293fe2e5e","web":"1:63082519291:web:d61e75e17911b4f6fe2e5e","windows":"1:63082519291:web:20e1810ea33bf443fe2e5e"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "abilifyapp",
+          "appId": "1:63082519291:android:4abf0e19dbbb3e4cfe2e5e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "abilifyapp",
+          "configurations": {
+            "android": "1:63082519291:android:4abf0e19dbbb3e4cfe2e5e",
+            "ios": "1:63082519291:ios:b8135bba6baf9293fe2e5e",
+            "macos": "1:63082519291:ios:b8135bba6baf9293fe2e5e",
+            "web": "1:63082519291:web:d61e75e17911b4f6fe2e5e",
+            "windows": "1:63082519291:web:20e1810ea33bf443fe2e5e"
+          }
+        }
+      }
+    }
+  }
+}
