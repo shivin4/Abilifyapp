@@ -38,3 +38,4 @@
 - **2026-03-28** - ui: redesign login and OTP screens
 - **2026-03-28** - ui: animated splash with brand illustration
 - **2026-03-28** - fix: use PNG splash asset for reliable rendering
+- **2026-03-29** - docs: expand README for beta demo setup
