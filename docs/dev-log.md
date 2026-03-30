@@ -40,3 +40,4 @@
 - **2026-03-28** - fix: use PNG splash asset for reliable rendering
 - **2026-03-29** - docs: expand README for beta demo setup
 - **2026-03-29** - chore: firebase project config for Firestore deploy
+- **2026-03-30** - fix: tighten community post validation in rules
