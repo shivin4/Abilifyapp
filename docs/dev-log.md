@@ -43,3 +43,4 @@
 - **2026-03-30** - fix: tighten community post validation in rules
 - **2026-03-30** - fix: community stream ordering and empty state
 - **2026-03-31** - fix: match therapist UID on session booking
+- **2026-03-31** - ui: polish parent sessions tab actions
