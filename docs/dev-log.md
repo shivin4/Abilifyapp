@@ -46,3 +46,4 @@
 - **2026-03-31** - ui: polish parent sessions tab actions
 - **2026-03-31** - chore: add device_info_plus for API URL detection
 - **2026-04-01** - docs: add submission checklist and app flow
+- **2026-04-01** - chore: phase 1 beta cleanup and config templates
