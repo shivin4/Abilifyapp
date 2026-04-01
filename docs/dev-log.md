@@ -45,3 +45,4 @@
 - **2026-03-31** - fix: match therapist UID on session booking
 - **2026-03-31** - ui: polish parent sessions tab actions
 - **2026-03-31** - chore: add device_info_plus for API URL detection
+- **2026-04-01** - docs: add submission checklist and app flow
